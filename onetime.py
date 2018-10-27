@@ -62,13 +62,14 @@ def generate_key():
 
 def send_download(file):
     from shutil import copyfileobj
+    import sys
     print("Content-type: application/octet-stream")
     print("Content-Disposition: attachment; filename=%s" %(file))
     print()
+    sys.stdout.flush()
     with open(FILE_STORAGE + file, 'rb') as f:
         copyfileobj(f, sys.stdout.buffer)
     f.close()
-    print(contents)
 
 
 def main():
@@ -78,7 +79,7 @@ def main():
     storageFile = ABS_PATH + 'keystore'
     keyCount = len(open(storageFile, 'r').readlines())
     populate_keystore(keyCount, state, seed)
-    keys = map(str.strip, open(storageFile, 'r').readlines())
+    keys = list(map(str.strip, open(storageFile, 'r').readlines()))
     # setup done
 
     form = cgi.FieldStorage()
@@ -93,6 +94,8 @@ def main():
                 print_html_head()
                 print("<h2>Sorry! The requested file could not be found.</h2>")
                 print_html_bottom()
+            keys.remove(suppliedKey)
+            open(ABS_PATH + 'keystore', 'w').write('\n'.join(keys) + '\n')
         else:
             print_html_head()
             print("<h2>Get the fuck out.</h2>")
