@@ -3,6 +3,7 @@ import cgi
 import random
 KEY_LENGTH = 16 # 16 char length
 ABS_PATH = '/onetime/'#'/storage/emulated/0/qpython/scripts3/'
+FILE_STORAGE = ABS_PATH + 'files/'
 
 def files_check():
     import os
@@ -11,13 +12,13 @@ def files_check():
     state = ABS_PATH + 'state'
     if not os.path.isfile(seed):
         import sys
-        print('ERROR: seed missing!')
+        #print('ERROR: seed missing!')
         sys.exit(1)
     if not os.path.isfile(state):
-        print('state file not found, initializing.')
+        #print('state file not found, initializing.')
         open(state, 'wb').write(b'0')
     if not os.path.isfile(keystore):
-        print('keystore not found, creating.')
+        #print('keystore not found, creating.')
         open(keystore, 'w').write('')
 
 def get_rng_parameters():
@@ -34,17 +35,41 @@ def populate_keystore(keyCount, state, seed):
     needToGenerate = 10-keyCount > 0
     if needToGenerate:
         newKeys = ''
-        #print('Generating {} new keys.'.format(10-keyCount))
         for k in range(keyCount, 10):
             state += 1
             setup_csprng(seed, state)
             newKeys += generate_key() + '\n'
         open(ABS_PATH + 'keystore', 'a').write(newKeys)
+        open(ABS_PATH + 'state', 'w').write(str(state))
+
+def print_html_head():
+    print ("Content-type:text/html\r\n\r\n")
+    print ("<html>")
+    print ("<head>")
+    print ("<title>Download access</title>")
+    print ("</head>")
+    print ("<body>")
+    
+def print_html_bottom():
+    print ("</body>")
+    print ("</html>")
+    
 
 def generate_key():
     import string
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for i in range(KEY_LENGTH))
+
+def send_download(file):
+    from shutil import copyfileobj
+    print("Content-type: application/octet-stream")
+    print("Content-Disposition: attachment; filename=%s" %(file))
+    print()
+    with open(FILE_STORAGE + file, 'rb') as f:
+        copyfileobj(f, sys.stdout.buffer)
+    f.close()
+    print(contents)
+
 
 def main():
     # begin setup
@@ -55,23 +80,27 @@ def main():
     populate_keystore(keyCount, state, seed)
     keys = map(str.strip, open(storageFile, 'r').readlines())
     # setup done
-    #print(*keys)
 
     form = cgi.FieldStorage()
     suppliedKey = form.getvalue('key')
-    print ("Content-type:text/html\r\n\r\n")
-    print ("<html>")
-    print ("<head>")
-    print ("<title>Hello - Second CGI Program</title>")
-    print ("</head>")
-    print ("<body>")
-    print ("<h2>Your key: %s</h2>" % (suppliedKey))
+    requestedFile = form.getvalue('file')
     if suppliedKey in keys:
-        print("<h1> is VALID!</h1>")
+        import os
+        if requestedFile != None:
+            if os.path.isfile(FILE_STORAGE + requestedFile):
+                send_download(requestedFile)
+            else:
+                print_html_head()
+                print("<h2>Sorry! The requested file could not be found.</h2>")
+                print_html_bottom()
+        else:
+            print_html_head()
+            print("<h2>Get the fuck out.</h2>")
+            print_html_bottom()  
     else:
-        print("<h1> is INVALID!</h1>")
-    print ("</body>")
-    print ("</html>")
+        print_html_head()
+        print("<h2>Sorry! The supplied downloadkey is INVALID!</h2>")
+        print_html_bottom()
 
 if __name__ == '__main__':
     main()
