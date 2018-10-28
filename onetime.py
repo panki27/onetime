@@ -88,14 +88,15 @@ def main():
     if suppliedKey in keys:
         import os
         if requestedFile != None:
-            if os.path.isfile(FILE_STORAGE + requestedFile):
-                send_download(requestedFile)
-            else:
-                print_html_head()
-                print("<h2>Sorry! The requested file could not be found.</h2>")
-                print_html_bottom()
-            keys.remove(suppliedKey)
-            open(ABS_PATH + 'keystore', 'w').write('\n'.join(keys) + '\n')
+            if '..' not in requesedFile:
+                if os.path.isfile(FILE_STORAGE + requestedFile):
+                    send_download(requestedFile)
+                else:
+                    print_html_head()
+                    print("<h2>Sorry! The requested file could not be found.</h2>")
+                    print_html_bottom()
+                keys.remove(suppliedKey)
+                open(ABS_PATH + 'keystore', 'w').write('\n'.join(keys) + '\n')
         else:
             print_html_head()
             print("<h2>Get the fuck out.</h2>")
