@@ -71,6 +71,11 @@ def send_download(file):
         copyfileobj(f, sys.stdout.buffer)
     f.close()
 
+def is_bot():
+    import os
+    userAgent = os.environ['HTTP_USER_AGENT']
+    return 'TelegramBot' in userAgent
+
 
 def main():
     # begin setup
@@ -83,12 +88,15 @@ def main():
     # setup done
 
     form = cgi.FieldStorage()
+    if is_bot():
+        import sys
+        sys.exit(0)
     suppliedKey = form.getvalue('key')
     requestedFile = form.getvalue('file')
     if suppliedKey in keys:
         import os
         if requestedFile != None:
-            if '..' not in requesedFile:
+            if '..' not in requestedFile:
                 if os.path.isfile(FILE_STORAGE + requestedFile):
                     send_download(requestedFile)
                 else:
